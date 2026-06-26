@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Register — TaskFlow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #f5f3ee;
+      --card:        #ffffff;
+      --accent:      #5a9e6f;
+      --accent-lt:   #eaf4ee;
+      --accent-hover:#4a8a5e;
+      --warm:        #f9f6f0;
+      --border:      #e8e4dc;
+      --text:        #2c2c2c;
+      --muted:       #9a9589;
+      --error-bg:    #fef2f2;
+      --error-bd:    #fca5a5;
+      --error-tx:    #b91c1c;
+    }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* subtle dot pattern background */
+    body {
+      background-image: radial-gradient(circle, #d8d4cc 1px, transparent 1px);
+      background-size: 28px 28px;
+      background-color: var(--bg);
+    }
+
+    /* ── PAGE WRAP ── */
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    /* ── TOP LOGO ── */
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 2rem;
+      animation: floatDown 0.5s ease both;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(90,158,111,0.3);
+    }
+
+    .logo-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: #fff;
+      fill: none;
+      stroke-width: 2.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .logo-name {
+      font-family: 'Nunito', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .logo-name span { color: var(--accent); }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2.25rem;
+      width: 100%;
+      max-width: 460px;
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 8px 32px rgba(0,0,0,0.06),
+        0 0 0 1px rgba(255,255,255,0.8) inset;
+      animation: riseUp 0.55s cubic-bezier(0.22,1,0.36,1) both;
+      animation-delay: 0.1s;
+    }
+
+    /* ── HEADING ── */
+    .greeting {
+      font-family: 'Nunito', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .greeting-sub {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+
+
+    /* ── ALERT ── */
+    .alert-msg {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--accent-lt);
+      border: 1px solid rgba(90,158,111,0.25);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 13px;
+      color: var(--accent-hover);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+    .alert-msg.error {
+      background: var(--error-bg);
+      border-color: var(--error-bd);
+      color: var(--error-tx);
+    }
+    .alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── NAME ROW ── */
+    .name-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    /* ── FIELDS ── */
+    .field-group { margin-bottom: 1.25rem; }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 7px;
+    }
+
+    .field-input {
+      width: 100%;
+      background: var(--warm);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text);
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .field-input::placeholder { color: #c5c0b8; }
+    .field-input:focus {
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(90,158,111,0.1);
+    }
+
+    /* ── PASSWORD ── */
+    .password-wrap { position: relative; }
+    .password-wrap .field-input { padding-right: 46px; }
+
+    .toggle-pass {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 15px;
+      padding: 0;
+      transition: color 0.2s;
+      line-height: 1;
+    }
+    .toggle-pass:hover { color: var(--accent); }
+
+    /* strength */
+    .strength-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .s-bar {
+      height: 4px;
+      flex: 1;
+      border-radius: 4px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    .s-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      min-width: 44px;
+      text-align: right;
+      letter-spacing: 0.03em;
+    }
+
+    /* ── TERMS ── */
+    .terms-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 1.25rem 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .terms-check {
+      margin-top: 2px;
+      accent-color: var(--accent);
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    /* ── SUBMIT ── */
+    .submit-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(90,158,111,0.3);
+    }
+    .submit-btn:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 6px 20px rgba(90,158,111,0.35);
+      transform: translateY(-1px);
+    }
+    .submit-btn:active { transform: scale(0.98); }
+
+    .btn-icon { font-size: 18px; line-height: 1; }
+
+    /* ── DIVIDER ── */
+    .or-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 1.5rem 0 1.25rem;
+    }
+    .or-line { flex: 1; height: 1px; background: var(--border); }
+    .or-text { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+    /* ── LOGIN LINK ── */
+    .login-row {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .login-row a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .login-row a:hover { color: var(--accent-hover); }
+
+
+
+    /* ── ANIMATIONS ── */
+    @keyframes floatDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes riseUp {
+      from { opacity: 0; transform: translateY(24px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* stagger form fields */
+    .card > * {
+      animation: floatDown 0.4s ease both;
+    }
+    .card > *:nth-child(1) { animation-delay: 0.2s; }
+    .card > *:nth-child(2) { animation-delay: 0.25s; }
+    .card > *:nth-child(3) { animation-delay: 0.30s; }
+    .card > *:nth-child(4) { animation-delay: 0.35s; }
+    .card > *:nth-child(5) { animation-delay: 0.40s; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 480px) {
+      .card { padding: 2rem 1.5rem; border-radius: 20px; }
+      .name-row { grid-template-columns: 1fr; gap: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- LOGO -->
+  <div class="logo-wrap">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <span class="logo-name">Task<span>Flow</span></span>
+  </div>
+
+  <!-- CARD -->
+  <div class="card">
+
+    <h1 class="greeting">Welcome aboard 👋</h1>
+    <p class="greeting-sub">Create your free account and start organizing your day in minutes.</p>
+
+    <!-- DJANGO MESSAGES -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert-msg {% if 'exists' in message.tags or 'error' in message.tags %}error{% endif %}">
+          <span class="alert-icon">{% if 'exists' in message.tags or 'error' in message.tags %}⚠️{% else %}✅{% endif %}</span>
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- NAME -->
+      <div class="name-row">
+        <div class="field-group">
+          <label class="field-label">First name</label>
+          <input type="text" class="field-input" name="first_name"
+                 placeholder="John" required>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Last name</label>
+          <input type="text" class="field-input" name="last_name"
+                 placeholder="Doe" required>
+        </div>
+      </div>
+      <div class="field-group">
+          <label class="field-label">Username</label>
+          <input type="text" class="field-input" name="username"
+                 placeholder="john_doe" required>
+        </div>
+
+
+      <!-- EMAIL -->
+      <div class="field-group">
+        <label class="field-label">Email address</label>
+        <input type="email" class="field-input" name="email"
+               placeholder="john@example.com" required>
+      </div>
+
+      <!-- PASSWORD -->
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <div class="password-wrap">
+          <input type="password" class="field-input" name="password"
+                 id="passInput" placeholder="Create a strong password"
+                 oninput="checkStrength(this.value)" required>
+          <button type="button" class="toggle-pass" onclick="togglePass()">&#128065;</button>
+        </div>
+        <div class="strength-row">
+          <div class="s-bar" id="b1"></div>
+          <div class="s-bar" id="b2"></div>
+          <div class="s-bar" id="b3"></div>
+          <span class="s-text" id="sLabel"></span>
+        </div>
+      </div>
+
+      <!-- TERMS -->
+      <div class="terms-row">
+        <input type="checkbox" class="terms-check" id="terms" required>
+        <label for="terms">
+          I agree to the <a href="#" style="color:var(--accent);text-decoration:none;font-weight:600;">Terms of Service</a>
+          and confirm this account is for my personal use.
+        </label>
+      </div>
+
+      <button type="submit" class="submit-btn">
+        <span class="btn-icon">🚀</span> Create my account
+      </button>
+    </form>
+
+    <div class="or-row">
+      <div class="or-line"></div>
+      <span class="or-text">already a member?</span>
+      <div class="or-line"></div>
+    </div>
+
+    <p class="login-row"><a href="/login/">Sign in to your account →</a></p>
+
+  </div>
+
+
+
+</div>
+
+<script>
+  function togglePass() {
+    const i = document.getElementById('passInput');
+    i.type = i.type === 'password' ? 'text' : 'password';
+  }
+
+  function checkStrength(val) {
+    const bars  = ['b1','b2','b3'].map(id => document.getElementById(id));
+    const label = document.getElementById('sLabel');
+    let score   = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+    if (/[0-9]/.test(val) || /[^a-zA-Z0-9]/.test(val)) score++;
+
+    const colors = ['#f87171', '#fb923c', '#5a9e6f'];
+    const labels = ['Weak', 'Fair', 'Strong'];
+
+    bars.forEach((b, i) => {
+      b.style.background = i < score ? colors[score - 1] : '#e8e4dc';
+    });
+    label.textContent = score > 0 ? labels[score - 1] : '';
+    label.style.color = score > 0 ? colors[score - 1] : '#9a9589';
+  }
+</script>
+</body>
+</html>
