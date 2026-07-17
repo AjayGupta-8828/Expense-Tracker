@@ -3,21 +3,835 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
+    <title>Expense Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+      html{
+        font-size: 125%; /* real DOM scaling so Chart.js canvas hover/click hit-detection stays accurate */
+      }
+      :root{
+        --bg:            #F1F5F9;
+        --card:          #FFFFFF;
+        --primary:       #2563EB;
+        --text:          #1E293B;
+        --text-muted:    #64748B;
+        --border:        #E2E8F0;
+
+        --income-bg:     #ECFDF5;
+        --income-fg:     #15803D;
+        --expense-bg:    #FEF2F2;
+        --expense-fg:    #DC2626;
+        --balance-bg:    #EFF6FF;
+        --balance-fg:    #2563EB;
+
+        --btn-search:    #2563EB;
+        --btn-add:       #16A34A;
+        --btn-edit:      #F59E0B;
+        --btn-delete:    #DC2626;
+        --btn-reset:     #64748B;
+
+        --table-header:  #F1F5F9;
+        --table-alt:     #F9FAFB;
+        --table-hover:   #E0F2FE;
+
+        /* Fixed per-category colors, used consistently across doughnut chart, budget bars, and badges */
+        --cat-food:          #F59E0B;
+        --cat-groceries:     #16A34A;
+        --cat-travel:        #2563EB;
+        --cat-shopping:      #A855F7;
+        --cat-entertainment: #EC4899;
+        --cat-bills:         #DC2626;
+        --cat-investment:    #0EA5E9;
+        --cat-other:         #64748B;
+
+        --radius: 10px;
+        --shadow: 0 2px 8px rgba(30, 41, 59, 0.06);
+        --shadow-hover: 0 8px 20px rgba(30, 41, 59, 0.10);
+      }
+
+      body{
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+      }
+
+      h3, h4, h5, h6, .navbar-brand{
+        font-family: "Poppins", sans-serif;
+      }
+
+      /* ---------- Navbar ---------- */
+      .navbar{
+        background: linear-gradient(135deg, #2563EB, #3B82F6) !important;
+        border-bottom: none;
+        padding: .55rem 1.25rem !important;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+        transition: box-shadow .2s ease;
+      }
+      .navbar.scrolled{
+        box-shadow: 0 4px 16px rgba(30, 41, 59, 0.18);
+      }
+      .navbar-brand{
+        color: #fff !important;
+        font-weight: 600;
+        font-size: 1rem;
+      }
+      .navbar-brand i{ margin-right: .35rem; }
+      .navbar .btn-outline-secondary{
+        color: #fff;
+        border-color: rgba(255,255,255,.55);
+        background: transparent;
+      }
+      .navbar .btn-outline-secondary:hover{
+        background: rgba(255,255,255,.15);
+        border-color: #fff;
+      }
+
+      /* ---------- Greeting ---------- */
+      .greeting{
+        font-size: 1.05rem;
+        font-weight: 600;
+        font-family: "Poppins", sans-serif;
+        margin: .1rem 0 .6rem;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+      }
+      .greeting .muted{
+        font-weight: 400;
+        font-size: .78rem;
+        color: var(--text-muted);
+        margin-left: .3rem;
+      }
+
+      /* ---------- Layout shell ---------- */
+      .page-wrap{
+        max-width: 1475px;
+        margin: 0 auto;
+        padding: .9rem 1rem 1.25rem;
+      }
+
+      .card{
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        transition: transform .18s ease, box-shadow .18s ease;
+      }
+      .card:hover{
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+      }
+
+      /* ---------- Summary cards ---------- */
+      .summary-row{
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: .65rem;
+        margin-bottom: .65rem;
+      }
+      .summary-card{
+        border: 1px solid var(--border);
+        border-left: 4px solid transparent;
+        background: var(--card);
+      }
+      .summary-card .card-body{
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        padding: .7rem .85rem;
+      }
+      .summary-icon{
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+        color: #fff;
+      }
+      .summary-card .card-title{
+        font-size: .68rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        margin-bottom: .1rem;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+      }
+      .summary-card .card-text{
+        font-size: 1.15rem;
+        font-weight: 800;
+        font-family: "Poppins", sans-serif;
+        margin-bottom: 0;
+        color: var(--text);
+        line-height: 1.15;
+        font-variant-numeric: tabular-nums;
+      }
+      .summary-card date{
+        font-size: .68rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .summary-card.income{ border-left-color: var(--income-fg); }
+      .summary-card.income .summary-icon{ background: linear-gradient(135deg, #22C55E, #15803D); }
+      .summary-card.expense{ border-left-color: var(--expense-fg); }
+      .summary-card.expense .summary-icon{ background: linear-gradient(135deg, #F87171, #DC2626); }
+      .summary-card.balance{ border-left-color: var(--balance-fg); }
+      .summary-card.balance .summary-icon{ background: linear-gradient(135deg, #60A5FA, #2563EB); }
+      .summary-card.transactions{ border-left-color: var(--text-muted); }
+      .summary-card.transactions .summary-icon{ background: linear-gradient(135deg, #94A3B8, #64748B); }
+
+      /* ---------- Buttons ---------- */
+      .btn{ border-radius: 7px; font-weight: 500; font-size: .82rem; }
+      .btn-sm{ font-size: .74rem; }
+      .btn-primary{ background: var(--btn-search); border-color: var(--btn-search); }
+      .btn-success{ background: var(--btn-add); border-color: var(--btn-add); }
+      .btn-outline-secondary{ color: var(--btn-reset); border-color: var(--border); }
+      .btn-outline-secondary:hover{ background: var(--btn-reset); border-color: var(--btn-reset); }
+      .btn-outline-primary{ color: var(--btn-edit); border-color: var(--btn-edit); }
+      .btn-outline-primary:hover{ background: var(--btn-edit); border-color: var(--btn-edit); color: #fff; }
+
+      /* ---------- Chart row (3-up) ---------- */
+      .chart-row{
+        display: grid;
+        grid-template-columns: 1.1fr 1fr 1fr;
+        gap: .65rem;
+        margin-bottom: .65rem;
+      }
+      .chart-card .card-body{ padding: .85rem .95rem; }
+      .chart-card h6{
+        font-size: .78rem;
+        font-weight: 600;
+        margin-bottom: .5rem;
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+      }
+      .chart-box{ position: relative; height: 188px; }
+      .chart-box.wide{ height: 188px; }
+
+      /* ---------- Budget tracker (compact) ---------- */
+      .budget-item + .budget-item{ margin-top: .55rem; }
+      .budget-item .row-top{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: .74rem;
+        margin-bottom: .25rem;
+      }
+      .budget-item .row-top strong{ font-size: .78rem; }
+      .budget-item .progress{ height: 5px; border-radius: 4px; background: var(--table-header); }
+      .budget-item .progress-bar{ transition: width 1s cubic-bezier(.22,1,.36,1); }
+      .budget-note{ font-size: .68rem; color: var(--text-muted); margin-top: .15rem; }
+      .budget-note.over{ color: var(--expense-fg); font-weight: 600; }
+      .budget-scroll{
+        max-height: 188px;
+        overflow-y: auto;
+        padding-right: .25rem;
+      }
+
+      .empty-state{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 1.2rem .5rem;
+        color: var(--text-muted);
+      }
+      .empty-state i{
+        font-size: 1.6rem;
+        color: var(--border);
+        margin-bottom: .4rem;
+      }
+      .empty-state p{ font-size: .78rem; margin: 0; }
+
+      /* ---------- Search + Transactions ---------- */
+      .bottom-row{
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: .65rem;
+      }
+      @media (max-width: 900px){
+        .chart-row, .bottom-row{ grid-template-columns: 1fr; }
+      }
+
+      .txn-card .card-body{ padding: .9rem 1rem; }
+      .filters-row{
+        display: flex;
+        flex-wrap: wrap;
+        gap: .4rem;
+        margin-bottom: .6rem;
+      }
+      .filters-row .form-control,
+      .filters-row .form-select{
+        font-size: .78rem;
+        padding: .32rem .55rem;
+        height: auto;
+      }
+      .filters-row .search-text{ flex: 1 1 200px; }
+      .filters-row .filter-field{ flex: 1 1 138px; }
+
+      .table{ font-size: .8rem; margin-bottom: 0; }
+      .table thead th{
+        background: var(--table-header);
+        color: var(--text-muted);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        font-weight: 600;
+        border-bottom: none;
+        padding: .4rem .6rem;
+      }
+      .table td{ padding: .4rem .6rem; border-color: var(--border); vertical-align: middle; }
+      .table tbody tr:nth-of-type(odd){ background: var(--table-alt); }
+      .table tbody tr:hover{ background: var(--table-hover); }
+      .table-scroll{ max-height: 238px; overflow-y: auto; }
+
+      .section-title{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .55rem;
+      }
+      .section-title h5{ font-size: .92rem; margin: 0; }
+    </style>
   </head>
   <body>
-    <nav class="navbar navbar-dark bg-primary px-4">
-    <a class="navbar-brand" href="/tasks/">Mainpage</a>
-    <a href="/add_transaction/" style="text-decoration:none;margin-left:1050px"><button class="btn btn-success">Go to Add Transaction</button></a>
-    <form class="d-flex" role="search">
-      {% if request.user.is_authenticated%}
-        <a href='/logout/' class="btn btn-success" type="submit">Logout</a>
-      {% else %}
-        <a href='/login/' class="btn btn-success" type="submit">Login</a>
-      {%endif%}
-    </form>
-  </nav>
-    <h1>Hello, world!</h1>
+
+    <nav class="navbar d-flex align-items-center" id="mainNavbar">
+      <a class="navbar-brand" href="/tasks/"><i class="bi bi-wallet2"></i>Expense Tracker</a>
+
+      <a href="/add_transaction/" class="btn btn-success btn-sm ms-auto me-2">
+        <i class="bi bi-plus-lg"></i> Add Transaction
+      </a>
+
+      <form class="d-flex mb-0" role="search">
+        {% if request.user.is_authenticated %}
+          <a href='/logout/' class="btn btn-outline-secondary btn-sm">Logout</a>
+        {% else %}
+          <a href='/login/' class="btn btn-success btn-sm">Login</a>
+        {% endif %}
+      </form>
+    </nav>
+
+    <div class="page-wrap">
+
+      <div class="greeting">
+        <span id="greetingText">Welcome back{% if request.user.first_name %}, {{ request.user.first_name }}{% endif %}</span> 👋
+        <span class="muted" id="greetingDate"></span>
+      </div>
+
+      <!-- ============ Summary Cards ============ -->
+      <div class="summary-row">
+
+        <div class="card summary-card income">
+          <div class="card-body">
+            <div class="summary-icon"><i class="bi bi-graph-up-arrow"></i></div>
+            <div>
+              <h6 class="card-title">Total Income</h6>
+              <p class="card-text"><span class="count-up" data-target="{{ income.total_income|default:'0' }}">₹0</span></p>
+              <date>This month</date>
+            </div>
+          </div>
+        </div>
+
+        <div class="card summary-card expense">
+          <div class="card-body">
+            <div class="summary-icon"><i class="bi bi-graph-down-arrow"></i></div>
+            <div>
+              <h6 class="card-title">Total Expense</h6>
+              <p class="card-text"><span class="count-up" data-target="{{ expense.total_expense|default:'0' }}">₹0</span></p>
+              <date>This month</date>
+            </div>
+          </div>
+        </div>
+
+        <div class="card summary-card balance">
+          <div class="card-body">
+            <div class="summary-icon"><i class="bi bi-cash-stack"></i></div>
+            <div>
+              <h6 class="card-title">Balance</h6>
+              <p class="card-text"><span class="count-up" data-target="{{ Balance|default:'0' }}">₹0</span></p>
+              <date>This month</date>
+            </div>
+          </div>
+        </div>
+
+        <div class="card summary-card transactions">
+          <div class="card-body">
+            <div class="summary-icon"><i class="bi bi-receipt"></i></div>
+            <div>
+              <h6 class="card-title">Transactions</h6>
+              <p class="card-text"><span class="count-up" data-target="{{ number_of_transactions|default:'0' }}" data-plain="1">0</span></p>
+              <date>This month</date>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ Charts row (3-up) ============ -->
+      <div class="chart-row">
+
+        <div class="card chart-card">
+          <div class="card-body">
+            <h6><i class="bi bi-bar-chart-line"></i> Income vs Expense</h6>
+            <div class="chart-box wide">
+              <canvas id="incomeExpenseChart"></canvas>
+            </div>
+          </div>
+        </div>
+        {{ IncomeExpenseData|json_script:"income-expense-chart-data" }}
+
+        <div class="card chart-card">
+          <div class="card-body">
+            <h6><i class="bi bi-pie-chart-fill"></i> By Category</h6>
+            <div class="chart-box">
+              <canvas id="expenseChart"></canvas>
+            </div>
+          </div>
+        </div>
+        {{ expenseData|json_script:"expense-chart-data" }}
+
+        <div class="card chart-card">
+          <div class="card-body">
+            <div class="section-title" style="margin-bottom:.5rem;">
+              <h6 class="mb-0"><i class="bi bi-piggy-bank"></i> Budget Tracker</h6>
+            </div>
+            <div class="budget-scroll">
+              {% for item in budget_data %}
+                <div class="budget-item">
+                  <div class="row-top">
+                    <strong>{{ item.category }}</strong>
+                    <span class="d-flex align-items-center gap-2">
+                      {{ item.percentage|floatformat:0 }}%
+                      <a href="/update_budget/{{ item.id }}/" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.62rem;">Edit</a>
+                    </span>
+                  </div>
+                  <div class="progress">
+                    <div
+                      class="progress-bar animated-bar
+                        {% if item.over_budget %}bg-danger
+                        {% elif item.percentage >= 80 %}bg-warning
+                        {% else %}bg-success
+                        {% endif %}"
+                      role="progressbar"
+                      data-target-width="{{ item.percentage }}"
+                      style="width: 0%;">
+                    </div>
+                  </div>
+                  {% if item.spent < item.limit %}
+                    <div class="budget-note">₹{{ item.remaining|floatformat:0 }} left</div>
+                  {% elif item.spent == item.limit %}
+                    <div class="budget-note">Limit reached</div>
+                  {% else %}
+                    <div class="budget-note over">Over by ₹{{ item.exceeded|floatformat:0 }}</div>
+                  {% endif %}
+                </div>
+              {% empty %}
+                <div class="empty-state">
+                  <i class="bi bi-piggy-bank"></i>
+                  <p>No budgets added yet.</p>
+                </div>
+              {% endfor %}
+            </div>
+            <button class="btn btn-success btn-sm w-100 mt-2" onclick="window.location.href='/budget_tracker/'">
+              <i class="bi bi-plus-lg"></i> Add Budget
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============ Search + Transactions / Trend ============ -->
+      <div class="bottom-row">
+
+        <div class="card txn-card">
+          <div class="card-body">
+
+            <div class="section-title">
+              <h5><i class="bi bi-receipt"></i> Recent Transactions</h5>
+              <button
+                type="submit"
+                form="searchForm"
+                name="see_all"
+                value="true"
+                class="btn btn-success btn-sm">
+                See All <i class="bi bi-arrow-right"></i>
+              </button>
+            </div>
+
+            <form id="searchForm" method="GET" onsubmit="return validateSearch()">
+              <div class="filters-row">
+                <input
+                  type="text"
+                  class="form-control search-text"
+                  name="search_text"
+                  placeholder="Search by title..."
+                  value="{{ request.GET.search_text }}">
+
+                <input
+                  type="date"
+                  class="form-control filter-field"
+                  name="search_date"
+                  value="{{ request.GET.search_date }}">
+
+                <select class="form-select filter-field" name="search_types">
+                  <option value="">All Types</option>
+                  <option value="Income" {% if request.GET.search_types == "Income" %}selected{% endif %}>Income</option>
+                  <option value="Expense" {% if request.GET.search_types == "Expense" %}selected{% endif %}>Expense</option>
+                </select>
+
+                <select class="form-select filter-field" name="search_category">
+                  <option value="">All Categories</option>
+                  <option value="Food" {% if request.GET.search_category == "Food" %}selected{% endif %}>Food</option>
+                  <option value="Investment" {% if request.GET.search_category == "Investment" %}selected{% endif %}>Investment</option>
+                  <option value="Travel" {% if request.GET.search_category == "Travel" %}selected{% endif %}>Travel</option>
+                  <option value="Other" {% if request.GET.search_category == "Other" %}selected{% endif %}>Other</option>
+                </select>
+
+                <select class="form-select filter-field" name="search_month">
+                  <option value="">Month</option>
+                  <option value="1">January</option>
+                  <option value="2">February</option>
+                  <option value="3">March</option>
+                  <option value="4">April</option>
+                  <option value="5">May</option>
+                  <option value="6">June</option>
+                  <option value="7">July</option>
+                  <option value="8">August</option>
+                  <option value="9">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12">December</option>
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="bi bi-search"></i>
+                </button>
+                <a href="{% url 'mainpage' %}" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </a>
+              </div>
+            </form>
+
+            <div class="table-scroll">
+              <table class="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for transaction in queryset %}
+                    <tr>
+                      <td>{{ transaction.date|date:"Y-m-d" }}</td>
+                      <td>{{ transaction.title }}</td>
+                      <td>₹ {{ transaction.amount }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="3">
+                        <div class="empty-state">
+                          <i class="bi bi-receipt"></i>
+                          <p>No recent transactions.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="card-body">
+            <h6><i class="bi bi-graph-up"></i> Income &amp; Expense Trend</h6>
+            <div class="chart-box" style="height: 275px;">
+              <canvas id="lineChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const expenseData = JSON.parse(
+        document.getElementById("expense-chart-data").textContent
+      );
+
+      const labels = expenseData.map(item => item.category);
+      const amounts = expenseData.map(item => item.total);
+
+      // Fixed color per category so the same category always renders the same color
+      // across the doughnut chart, budget bars, and anywhere else it appears.
+      const categoryColors = {
+        "Food": "#F59E0B",
+        "Groceries": "#16A34A",
+        "Travel": "#2563EB",
+        "Shopping": "#A855F7",
+        "Entertainment": "#EC4899",
+        "Bills": "#DC2626",
+        "Investment": "#0EA5E9",
+        "Salary": "#0EA5E9",
+        "Other": "#64748B"
+      };
+      const fallbackPalette = ["#2563EB", "#16A34A", "#F59E0B", "#DC2626", "#64748B", "#0EA5E9", "#84CC16", "#EA580C"];
+      const sliceColors = labels.map((cat, i) => categoryColors[cat] || fallbackPalette[i % fallbackPalette.length]);
+
+      const tooltipStyle = {
+        backgroundColor: "#1E293B",
+        titleFont: { family: "Inter", size: 11, weight: "600" },
+        bodyFont: { family: "Inter", size: 11 },
+        padding: 10,
+        cornerRadius: 8,
+        boxPadding: 5,
+        displayColors: true,
+        caretSize: 6
+      };
+
+      new Chart(document.getElementById("expenseChart"), {
+        type: "doughnut",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Expense",
+            data: amounts,
+            backgroundColor: sliceColors,
+            borderWidth: 1,
+            borderColor: "#FFFFFF",
+            hoverOffset: 10,
+            hoverBorderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "nearest", intersect: true },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 8, font: { size: 9 } }
+            },
+            tooltip: {
+              enabled: true,
+              ...tooltipStyle,
+              callbacks: {
+                label: function(ctx) {
+                  return " " + ctx.label + ": ₹" + ctx.formattedValue;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      function validateSearch() {
+        let title = document.querySelector('input[name="search_text"]').value.trim();
+        let date = document.querySelector('input[name="search_date"]').value;
+        let type = document.querySelector('select[name="search_types"]').value;
+        let category = document.querySelector('select[name="search_category"]').value;
+        let month = document.querySelector('select[name="search_month"]').value;
+
+        let activeElement = document.activeElement;
+        if (activeElement && activeElement.name === "see_all") {
+          return true;
+        }
+
+        if (title === "" && date === "" && type === "" && category === "" && month === "") {
+          alert("Please apply at least one filter before searching.");
+          return false;
+        }
+
+        return true;
+      }
+    </script>
+
+    <script>
+      new Chart(document.getElementById("incomeExpenseChart"), {
+        type: "bar",
+        data: {
+          labels: {{ months|safe }},
+          datasets: [
+            {
+              label: "Income",
+              data: {{ income_data|safe }},
+              backgroundColor: "#16A34A",
+              borderRadius: 5,
+              barThickness: 10
+            },
+            {
+              label: "Expense",
+              data: {{ expense_data|safe }},
+              backgroundColor: "#DC2626",
+              borderRadius: 5,
+              barThickness: 10
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          hover: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 8, font: { size: 9 } },
+              onClick: Chart.defaults.plugins.legend.onClick
+            },
+            tooltip: {
+              enabled: true,
+              ...tooltipStyle,
+              callbacks: {
+                label: function(ctx) {
+                  return " " + ctx.dataset.label + ": ₹" + ctx.formattedValue;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                font: { size: 9 },
+                callback: function(value) { return "₹" + value; }
+              }
+            }
+          }
+        }
+      });
+    </script>
+
+    <script>
+      const lineCtx = document.getElementById("lineChart").getContext("2d");
+      const incomeGradient = lineCtx.createLinearGradient(0, 0, 0, 275);
+      incomeGradient.addColorStop(0, "rgba(22, 163, 74, 0.28)");
+      incomeGradient.addColorStop(1, "rgba(22, 163, 74, 0)");
+      const expenseGradient = lineCtx.createLinearGradient(0, 0, 0, 275);
+      expenseGradient.addColorStop(0, "rgba(220, 38, 38, 0.22)");
+      expenseGradient.addColorStop(1, "rgba(220, 38, 38, 0)");
+
+      new Chart(document.getElementById("lineChart"), {
+        type: "line",
+        data: {
+          labels: {{ months|safe }},
+          datasets: [
+            {
+              label: "Income",
+              data: {{ income_data|safe }},
+              borderColor: "#16A34A",
+              backgroundColor: incomeGradient,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 6
+            },
+            {
+              label: "Expense",
+              data: {{ expense_data|safe }},
+              borderColor: "#DC2626",
+              backgroundColor: expenseGradient,
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          hover: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 8, font: { size: 9 } },
+              onClick: Chart.defaults.plugins.legend.onClick
+            },
+            tooltip: {
+              enabled: true,
+              ...tooltipStyle,
+              callbacks: {
+                label: function(ctx) {
+                  return " " + ctx.dataset.label + ": ₹" + ctx.formattedValue;
+                }
+              }
+            }
+          },
+          scales: {
+            y: { beginAtZero: true, ticks: { font: { size: 9 } } },
+            x: { ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    </script>
+
+    <script>
+      // Sticky navbar shadow only after scrolling
+      const navbar = document.getElementById("mainNavbar");
+      window.addEventListener("scroll", function () {
+        navbar.classList.toggle("scrolled", window.scrollY > 4);
+      });
+
+      // Greeting date
+      const greetingDate = document.getElementById("greetingDate");
+      if (greetingDate) {
+        greetingDate.textContent = new Date().toLocaleDateString("en-IN", {
+          weekday: "long", day: "numeric", month: "long"
+        });
+      }
+
+      // Animated count-up for summary card numbers
+      document.querySelectorAll(".count-up").forEach(function (el) {
+        const target = parseFloat(el.getAttribute("data-target")) || 0;
+        const isPlain = el.getAttribute("data-plain") === "1";
+        const duration = 900;
+        const start = performance.now();
+
+        function formatValue(v) {
+          if (isPlain) return Math.round(v).toString();
+          return "₹" + Math.round(v).toLocaleString("en-IN");
+        }
+
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          const eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = formatValue(target * eased);
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      });
+
+      // Animate budget progress bars from 0 to their target width
+      document.querySelectorAll(".animated-bar").forEach(function (bar) {
+        const targetWidth = bar.getAttribute("data-target-width");
+        requestAnimationFrame(function () {
+          setTimeout(function () {
+            bar.style.width = targetWidth + "%";
+          }, 100);
+        });
+      });
+    </script>
+
   </body>
 </html>

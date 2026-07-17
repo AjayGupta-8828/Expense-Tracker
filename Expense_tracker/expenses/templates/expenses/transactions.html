@@ -6,6 +6,7 @@
     <body>
       <nav class="navbar navbar-dark bg-primary px-4">
     <a class="navbar-brand" href="/tasks/">My To-Do List</a>
+    <a href="{% url 'mainpage' %}" style="text-decoration:none;margin-left:1050px"><button class="btn btn-success">Go to Mainpage</button></a>
     <a href="/add_transaction/" style="text-decoration:none;margin-left:1050px"><button class="btn btn-success">Go to Add Transaction</button></a>
     <form class="d-flex" role="search">
       {% if request.user.is_authenticated%}

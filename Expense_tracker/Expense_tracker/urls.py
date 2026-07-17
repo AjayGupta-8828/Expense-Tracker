@@ -31,6 +31,8 @@ urlpatterns = [
     path("transactions/",transaction,name="transactions"),
     path("delete_transaction/<int:id>/",delete_transaction,name="delete_transaction"),
     path("update_transaction/<int:id>/",update_transaction,name="update_transaction"),
+    path("budget_tracker/",budget_tracker,name="budget_tracker"),
+    path("update_budget/<int:id>/",update_budget,name="update_budget"),
 ]
 
 if settings.DEBUG:

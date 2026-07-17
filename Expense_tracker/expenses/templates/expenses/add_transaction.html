@@ -1,52 +1,309 @@
-<html>
-<head>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Add Transaction</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar navbar-dark bg-primary px-4">
-    <a class="navbar-brand" href="/tasks/">All Transactions</a>
-    <a href="/transactions/" style="text-decoration:none;margin-left:1050px"><button class="btn btn-success">Go to Transaction List</button></a>
-    <form class="d-flex" role="search">
-      {% if request.user.is_authenticated%}
-        <a href='/logout/' class="btn btn-success" type="submit">Logout</a>
-      {% else %}
-        <a href='/login/' class="btn btn-success" type="submit">Login</a>
-      {%endif%}
-    </form>
-  </nav>
-    <h1>Add Transaction</h1>
-    <form method="post">
-        {% csrf_token %}
-        <label for="title">Title:</label>
-        <input type="text" id="title" name="title" required>
-        <br>
-        <label for="amount">Amount:</label>
-        <input type="number" id="amount" name="amount" step="10" required>
-        <br>
-        <label for="types">Type:</label>
-        <select id="types" name="types" required>
-            <option value="Income">Income</option>
-            <option value="Expense">Expense</option>
-        </select>
-        <br>
-        <label for="category">Category:</label>
-        <select id="category" name="category" required>
-            <option value="Salary">Salary</option>
-            <option value="Food">Food</option>
-            <option value="Groceries">Groceries</option>
-            <option value="Travel">Travel</option>
-            <option value="Shopping">Shopping</option>
-            <option value="Bills">Bills</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Other">Other</option>
-        </select>
-        <br>
-        <label for="date">Date:</label>
-        <input type="date" id="date" name="date">
-        <br>
-        <button type="submit">Add Transaction</button>
-    </form>
-    <a href="{% url 'transactions' %}">Back to Transactions</a>
-</body>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+      :root{
+        --bg:            #F1F5F9;
+        --card:          #FFFFFF;
+        --primary:       #2563EB;
+        --text:          #1E293B;
+        --text-muted:    #64748B;
+        --border:        #E2E8F0;
+
+        --btn-add:       #16A34A;
+        --btn-reset:     #64748B;
+
+        --cat-food:          #F59E0B;
+        --cat-groceries:     #16A34A;
+        --cat-travel:        #2563EB;
+        --cat-shopping:      #A855F7;
+        --cat-entertainment: #EC4899;
+        --cat-bills:         #DC2626;
+        --cat-investment:    #0EA5E9;
+        --cat-salary:        #0EA5E9;
+        --cat-other:         #64748B;
+
+        --radius: 12px;
+        --shadow: 0 2px 10px rgba(30, 41, 59, 0.06);
+        --shadow-hover: 0 10px 24px rgba(30, 41, 59, 0.10);
+      }
+
+      body{
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        min-height: 100vh;
+      }
+
+      h1, h5, .navbar-brand{
+        font-family: "Poppins", sans-serif;
+      }
+
+      /* ---------- Navbar ---------- */
+      .navbar{
+        background: linear-gradient(135deg, #2563EB, #3B82F6) !important;
+        border-bottom: none;
+        padding: .6rem 1.25rem !important;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+        transition: box-shadow .2s ease;
+      }
+      .navbar.scrolled{
+        box-shadow: 0 4px 16px rgba(30, 41, 59, 0.18);
+      }
+      .navbar-brand{
+        color: #fff !important;
+        font-weight: 600;
+        font-size: 1.05rem;
+      }
+      .navbar-brand i{ margin-right: .4rem; }
+      .navbar .btn{ border-radius: 8px; font-weight: 500; font-size: .85rem; }
+      .navbar .btn-success{ background: var(--btn-add); border-color: var(--btn-add); }
+      .navbar .btn-outline-secondary{
+        color: #fff;
+        border-color: rgba(255,255,255,.55);
+        background: transparent;
+      }
+      .navbar .btn-outline-secondary:hover{
+        background: rgba(255,255,255,.15);
+        border-color: #fff;
+      }
+
+      /* ---------- Page wrap ---------- */
+      .page-wrap{
+        max-width: 640px;
+        margin: 2.5rem auto;
+        padding: 0 1rem;
+      }
+
+      .page-eyebrow{
+        font-size: .75rem;
+        font-weight: 600;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: .2rem;
+      }
+      .page-title{
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+      }
+      .page-title-icon{
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #60A5FA, #2563EB);
+        color: #fff;
+        font-size: 1.05rem;
+        flex-shrink: 0;
+      }
+
+      /* ---------- Form card ---------- */
+      .form-card{
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 1.75rem;
+        transition: transform .18s ease, box-shadow .18s ease;
+        animation: fadeInUp .35s ease;
+      }
+      .form-card:hover{
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+      }
+      @keyframes fadeInUp{
+        from{ opacity: 0; transform: translateY(8px); }
+        to{ opacity: 1; transform: translateY(0); }
+      }
+
+      .form-label{
+        font-weight: 600;
+        font-size: .82rem;
+        color: var(--text);
+        margin-bottom: .35rem;
+      }
+
+      .input-icon{
+        position: relative;
+      }
+      .input-icon i{
+        position: absolute;
+        left: .8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: .85rem;
+        pointer-events: none;
+      }
+      .input-icon .form-control,
+      .input-icon .form-select{
+        padding-left: 2.2rem;
+      }
+
+      .form-control, .form-select{
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        padding: .55rem .8rem;
+        font-size: .9rem;
+        transition: border-color .15s ease, box-shadow .15s ease;
+      }
+      .form-control:focus, .form-select:focus{
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+      }
+
+      /* Category color dot, updates via JS to match the selected category's fixed color */
+      #categoryDot{
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cat-salary);
+        margin-right: .4rem;
+        transition: background .15s ease;
+      }
+
+      .mb-field{ margin-bottom: 1.1rem; }
+
+      .row-2{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+      @media (max-width: 560px){
+        .row-2{ grid-template-columns: 1fr; }
+      }
+
+      .form-actions{
+        display: flex;
+        justify-content: flex-end;
+        gap: .6rem;
+        margin-top: 1.5rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+      }
+
+      .btn{ border-radius: 8px; font-weight: 500; }
+      .btn-primary{ background: var(--primary); border-color: var(--primary); }
+      .btn-primary:hover{ background: #1D4ED8; border-color: #1D4ED8; }
+      .btn-outline-secondary{ color: var(--btn-reset); border-color: var(--border); }
+      .btn-outline-secondary:hover{ background: var(--btn-reset); border-color: var(--btn-reset); }
+    </style>
+  </head>
+  <body>
+
+    <nav class="navbar d-flex align-items-center" id="mainNavbar">
+      <a class="navbar-brand" href="/tasks/"><i class="bi bi-list-ul"></i>All Transactions</a>
+
+      <div class="d-flex gap-2 ms-auto me-2">
+        <a href="{% url 'mainpage' %}" class="btn btn-success btn-sm">
+          <i class="bi bi-house"></i> Mainpage
+        </a>
+        <a href="/transactions/" class="btn btn-success btn-sm">
+          <i class="bi bi-list-ul"></i> Transaction List
+        </a>
+      </div>
+
+      <form class="d-flex mb-0" role="search">
+        {% if request.user.is_authenticated %}
+          <a href='/logout/' class="btn btn-outline-secondary btn-sm">Logout</a>
+        {% else %}
+          <a href='/login/' class="btn btn-success btn-sm">Login</a>
+        {% endif %}
+      </form>
+    </nav>
+
+    <div class="page-wrap">
+
+      <div class="page-eyebrow">New entry</div>
+      <div class="page-title">
+        <span class="page-title-icon"><i class="bi bi-plus-lg"></i></span>
+        Add Transaction
+      </div>
+
+      <div class="form-card">
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="mb-field">
+            <label class="form-label" for="title">Title</label>
+            <div class="input-icon">
+              <i class="bi bi-pencil"></i>
+              <input type="text" class="form-control" id="title" name="title" placeholder="e.g. Grocery shopping" required>
+            </div>
+          </div>
+
+          <div class="row-2 mb-field">
+            <div>
+              <label class="form-label" for="amount">Amount (₹)</label>
+              <div class="input-icon">
+                <i class="bi bi-currency-rupee"></i>
+                <input type="number" class="form-control" id="amount" name="amount" step="10" placeholder="0" required>
+              </div>
+            </div>
+            <div>
+              <label class="form-label" for="date">Date</label>
+              <div class="input-icon">
+                <i class="bi bi-calendar3"></i>
+                <input type="date" class="form-control" id="date" name="date">
+              </div>
+            </div>
+          </div>
+
+          <div class="row-2 mb-field">
+            <div>
+              <label class="form-label" for="types">Type</label>
+              <select class="form-select" id="types" name="types" required>
+                <option value="Income">Income</option>
+                <option value="Expense">Expense</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" for="category">
+                <span id="categoryDot"></span>Category
+              </label>
+              <select class="form-select" id="category" name="category" required>
+                <option value="Salary">Salary</option>
+                <option value="Food">Food</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Travel">Travel</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Bills">Bills</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <a href="{% url 'mainpage' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-lg"></i> Add Transaction
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+
+  </body>
 </html>
