@@ -1,52 +1,390 @@
-<html>
-    <head>
-        <title>Transactions</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    </head>
-    <body>
-      <nav class="navbar navbar-dark bg-primary px-4">
-    <a class="navbar-brand" href="/tasks/">My To-Do List</a>
-    <a href="{% url 'mainpage' %}" style="text-decoration:none;margin-left:1050px"><button class="btn btn-success">Go to Mainpage</button></a>
-    <a href="/add_transaction/" style="text-decoration:none;margin-left:1050px"><button class="btn btn-success">Go to Add Transaction</button></a>
-    <form class="d-flex" role="search">
-      {% if request.user.is_authenticated%}
-        <a href='/logout/' class="btn btn-success" type="submit">Logout</a>
-      {% else %}
-        <a href='/login/' class="btn btn-success" type="submit">Login</a>
-      {%endif%}
-    </form>
-  </nav>
-        <h1>Transactions</h1>
-        <p>This is the transactions page.</p>
-         <div class="task-table-wrap">
-      <table class="table table-bordered border-primary">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Title</th>
-            <th>Amount</th>
-            <th>Action</th>
-            <th>Category</th>
-            <th>Date</th>
-            <th>Actions</th>
-            
-          </tr>
-        </thead>
-        <tbody>
-          {% for i in tasks %}
-          <tr>
-            <th scope="row">{{forloop.counter}}</th>
-            <td>{{i.title}}</td>
-            <td>{{i.amount}}</td>   
-            <td>{{i.types}}</td>
-            <td>{{i.category}}</td>
-            <td>{{i.date}}</td>   
-            <td><a href="/delete_transaction/{{ i.id }}/" class="btn-delete"
-                 onclick="return confirm('Delete?')">Delete</a>
-                 <a href="/update_transaction/{{ i.id }}/" class="btn-update">Update</a></td>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Transactions</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+      // Same theme key as the mainpage, so dark mode stays in sync across pages.
+      (function () {
+        var saved = localStorage.getItem("expenseTrackerTheme");
+        if (saved === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+
+    <style>
+      html{ font-size: 125%; }
+      :root{
+        --bg:            #F1F5F9;
+        --card:          #FFFFFF;
+        --primary:       #2563EB;
+        --text:          #1E293B;
+        --text-muted:    #64748B;
+        --border:        #E2E8F0;
+
+        --income-bg:     #ECFDF5;
+        --income-fg:     #15803D;
+        --expense-bg:    #FEF2F2;
+        --expense-fg:    #DC2626;
+
+        --btn-edit:      #F59E0B;
+        --btn-delete:    #DC2626;
+
+        --table-header:  #F1F5F9;
+        --table-alt:     #F9FAFB;
+        --table-hover:   #E0F2FE;
+
+        --cat-food:          #F59E0B;
+        --cat-groceries:     #16A34A;
+        --cat-travel:        #2563EB;
+        --cat-shopping:      #A855F7;
+        --cat-entertainment: #EC4899;
+        --cat-bills:         #DC2626;
+        --cat-investment:    #0EA5E9;
+        --cat-salary:        #0EA5E9;
+        --cat-other:         #64748B;
+
+        --radius: 10px;
+        --shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+        --shadow-hover: 0 14px 34px rgba(0, 0, 0, 0.10);
+      }
+
+      [data-theme="dark"]{
+        --bg:            #0F172A;
+        --card:          #1E293B;
+        --primary:       #60A5FA;
+        --text:          #F8FAFC;
+        --text-muted:    #94A3B8;
+        --border:        #334155;
+
+        --table-header:  #253449;
+        --table-alt:     #1A2637;
+        --table-hover:   #2B3B54;
+
+        --btn-edit:      #FBBF24;
+
+        --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        --shadow-hover: 0 10px 24px rgba(0, 0, 0, 0.45);
+      }
+      [data-theme="dark"] .card{ border-color: var(--border); }
+      [data-theme="dark"] .navbar{
+        background: linear-gradient(135deg, #1E3A8A, #1D4ED8) !important;
+      }
+      [data-theme="dark"] .empty-state i{ color: var(--border); }
+
+      body{
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        transition: background .25s ease, color .25s ease;
+      }
+      h1, h3, h4, h5, h6, .navbar-brand{ font-family: "Poppins", sans-serif; }
+
+      .btn{ border-radius: 7px; font-weight: 500; font-size: .82rem; transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease; }
+      .btn:hover{ transform: translateY(-1px); }
+      .btn:active{ transform: translateY(0); }
+      .btn-success{ background: #16A34A; border-color: #16A34A; }
+
+      /* ---------- Navbar (matches mainpage) ---------- */
+      .navbar{
+        background: linear-gradient(135deg, #2563EB, #3B82F6) !important;
+        border-bottom: none;
+        padding: .55rem 1.25rem !important;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .5rem;
+      }
+      .navbar-brand{ color: #fff !important; font-weight: 600; font-size: 1rem; }
+      .navbar-brand i{ margin-right: .35rem; }
+      .navbar .btn-outline-light{
+        color: #fff;
+        border-color: rgba(255,255,255,.55);
+        background: transparent;
+      }
+      .navbar .btn-outline-light:hover{
+        background: rgba(255,255,255,.15);
+        border-color: #fff;
+      }
+      .navbar .nav-actions{
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin-left: auto;
+      }
+
+      /* ---------- Layout shell ---------- */
+      .page-wrap{
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.1rem 1rem 1.5rem;
+      }
+      .page-header{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .6rem;
+        margin-bottom: .9rem;
+      }
+      .page-header h1{
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+      }
+      .page-header p{
+        font-size: .82rem;
+        color: var(--text-muted);
+        margin: .15rem 0 0;
+      }
+
+      .card{
+        background: var(--card);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .task-table-wrap{
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: .75rem;
+        overflow-x: auto;
+      }
+
+      /* ---------- Table (matches mainpage) ---------- */
+      .table{ font-size: .85rem; margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+      .table > :not(caption) > * > *{
+        background-color: var(--card) !important;
+        color: var(--text);
+        border-bottom-color: var(--border) !important;
+        box-shadow: none !important;
+      }
+      .table thead th{
+        background-color: var(--table-header) !important;
+        color: var(--text-muted);
+        font-size: .68rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        font-weight: 700;
+        border-bottom: 1px solid var(--border);
+        padding: .65rem .75rem;
+        white-space: nowrap;
+      }
+      .table thead th:first-child{ border-top-left-radius: 8px; }
+      .table thead th:last-child{ border-top-right-radius: 8px; }
+      .table td, .table th{
+        padding: .65rem .75rem;
+        border-color: var(--border);
+        vertical-align: middle;
+      }
+      .table tbody tr{ transition: background .12s ease; }
+      .table tbody tr:nth-of-type(odd) > *{ background-color: var(--table-alt) !important; }
+      .table.table-hover tbody tr:hover > *{ background-color: var(--table-hover) !important; }
+      .table td:nth-child(3){ font-variant-numeric: tabular-nums; font-weight: 600; }
+
+      /* ---------- Type badge ---------- */
+      .type-badge{
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .2rem .6rem;
+        border-radius: 999px;
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .02em;
+      }
+      .type-badge.income{ background: var(--income-bg); color: var(--income-fg); }
+      .type-badge.expense{ background: var(--expense-bg); color: var(--expense-fg); }
+      [data-theme="dark"] .type-badge.income{ background: rgba(21,128,61,.18); }
+      [data-theme="dark"] .type-badge.expense{ background: rgba(220,38,38,.18); }
+
+      /* ---------- Category badge (dot + name, colors match mainpage doughnut) ---------- */
+      .cat-badge{
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        font-size: .78rem;
+      }
+      .cat-badge .cat-dot{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+      .cat-badge.cat-food .cat-dot{ background: var(--cat-food); }
+      .cat-badge.cat-groceries .cat-dot{ background: var(--cat-groceries); }
+      .cat-badge.cat-travel .cat-dot{ background: var(--cat-travel); }
+      .cat-badge.cat-shopping .cat-dot{ background: var(--cat-shopping); }
+      .cat-badge.cat-entertainment .cat-dot{ background: var(--cat-entertainment); }
+      .cat-badge.cat-bills .cat-dot{ background: var(--cat-bills); }
+      .cat-badge.cat-investment .cat-dot{ background: var(--cat-investment); }
+      .cat-badge.cat-salary .cat-dot{ background: var(--cat-salary); }
+      .cat-badge.cat-other .cat-dot{ background: var(--cat-other); }
+
+      /* ---------- Row action buttons ---------- */
+      .row-actions{ display: flex; gap: .4rem; flex-wrap: wrap; }
+      .action-btn{
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        border: none;
+        border-radius: 999px;
+        font-size: .68rem;
+        font-weight: 600;
+        padding: .3rem .65rem;
+        text-decoration: none;
+        transition: background .15s ease, color .15s ease;
+        cursor: pointer;
+      }
+      .action-btn.edit{ background: rgba(245, 158, 11, .12); color: var(--btn-edit); }
+      .action-btn.edit:hover{ background: var(--btn-edit); color: #fff; }
+      .action-btn.delete{ background: rgba(220, 38, 38, .1); color: var(--btn-delete); }
+      .action-btn.delete:hover{ background: var(--btn-delete); color: #fff; }
+      [data-theme="dark"] .action-btn.edit{ color: #FBBF24; }
+
+      .empty-state{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--text-muted);
+      }
+      .empty-state i{ font-size: 1.8rem; color: var(--border); margin-bottom: .5rem; }
+      .empty-state p{ font-size: .85rem; margin: 0; }
+
+      @media (max-width: 700px){
+        .navbar .nav-actions{ width: 100%; justify-content: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <nav class="navbar" id="mainNavbar">
+      <a class="navbar-brand" href="{% url 'mainpage' %}"><i class="bi bi-wallet2"></i>Expense Tracker</a>
+
+      <div class="nav-actions">
+        <a href="{% url 'mainpage' %}" class="btn btn-outline-light btn-sm">
+          <i class="bi bi-house-door"></i> Mainpage
+        </a>
+        <button type="button" class="btn btn-outline-light btn-sm" id="themeToggle" title="Toggle dark mode">
+          <i class="bi bi-moon-stars"></i>
+        </button>
+        <form class="d-flex mb-0" role="search">
+          {% if request.user.is_authenticated %}
+            <a href='/logout/' class="btn btn-outline-light btn-sm">Logout</a>
+          {% else %}
+            <a href='/login/' class="btn btn-success btn-sm">Login</a>
+          {% endif %}
+        </form>
+      </div>
+    </nav>
+
+    <div class="page-wrap">
+
+      <div class="page-header">
+        <div>
+          <h1><i class="bi bi-receipt"></i> All Transactions</h1>
+          <p>Every income and expense entry you've recorded.</p>
+        </div>
+        <a href="/add_transaction/" class="btn btn-success btn-sm">
+          <i class="bi bi-plus-lg"></i> Add Transaction
+        </a>
+      </div>
+
+      <div class="task-table-wrap">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Type</th>
+              <th>Category</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in tasks %}
+              <tr>
+                <th scope="row">{{ forloop.counter }}</th>
+                <td>{{ i.title }}</td>
+                <td>₹ {{ i.amount }}</td>
+                <td>
+                  <span class="type-badge {% if i.types == 'Income' %}income{% else %}expense{% endif %}">
+                    {{ i.types }}
+                  </span>
+                </td>
+                <td>
+                  <span class="cat-badge cat-{{ i.category|lower }}">
+                    <span class="cat-dot"></span>{{ i.category }}
+                  </span>
+                </td>
+                <td>{{ i.date|date:"Y-m-d" }}</td>
+                <td>
+                  <div class="row-actions">
+                    <a href="/update_transaction/{{ i.id }}/" class="action-btn edit">
+                      <i class="bi bi-pencil-fill" style="font-size:.6rem;"></i> Update
+                    </a>
+                    <a href="/delete_transaction/{{ i.id }}/" class="action-btn delete"
+                       onclick="return confirm('Delete this transaction?')">
+                      <i class="bi bi-trash-fill" style="font-size:.6rem;"></i> Delete
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7">
+                  <div class="empty-state">
+                    <i class="bi bi-receipt"></i>
+                    <p>No transactions yet. Add your first one to get started.</p>
+                  </div>
+                </td>
+              </tr>
             {% endfor %}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
+
     </div>
+
+    <script>
+      const themeToggle = document.getElementById("themeToggle");
+      const themeIcon = themeToggle.querySelector("i");
+      function applyTheme(theme) {
+        if (theme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          themeIcon.className = "bi bi-sun";
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          themeIcon.className = "bi bi-moon-stars";
+        }
+      }
+      applyTheme(localStorage.getItem("expenseTrackerTheme") || "light");
+      themeToggle.addEventListener("click", function () {
+        const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+        const next = current === "dark" ? "light" : "dark";
+        applyTheme(next);
+        localStorage.setItem("expenseTrackerTheme", next);
+      });
+    </script>
+
   </body>
 </html>

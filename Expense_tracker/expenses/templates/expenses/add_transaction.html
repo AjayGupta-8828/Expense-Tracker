@@ -9,6 +9,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 
+    <script>
+      // Same theme key as the rest of the app, so dark mode stays in sync across pages.
+      (function () {
+        var saved = localStorage.getItem("expenseTrackerTheme");
+        if (saved === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+
     <style>
       :root{
         --bg:            #F1F5F9;
@@ -36,11 +46,49 @@
         --shadow-hover: 0 10px 24px rgba(30, 41, 59, 0.10);
       }
 
+      [data-theme="dark"]{
+        --bg:            #0F172A;
+        --card:          #1E293B;
+        --primary:       #60A5FA;
+        --text:          #F8FAFC;
+        --text-muted:    #94A3B8;
+        --border:        #334155;
+
+        --shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        --shadow-hover: 0 10px 24px rgba(0, 0, 0, 0.45);
+      }
+      [data-theme="dark"] .navbar{
+        background: linear-gradient(135deg, #1E3A8A, #1D4ED8) !important;
+      }
+      [data-theme="dark"] .form-control,
+      [data-theme="dark"] .form-select{
+        background-color: var(--card);
+        color: var(--text);
+        border-color: var(--border);
+      }
+      [data-theme="dark"] .form-control::placeholder{
+        color: var(--text-muted);
+      }
+      [data-theme="dark"] .form-control:focus,
+      [data-theme="dark"] .form-select:focus{
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, .22);
+      }
+      [data-theme="dark"] .btn-outline-secondary{
+        color: var(--text-muted);
+        border-color: var(--border);
+      }
+      [data-theme="dark"] .btn-outline-secondary:hover{
+        background: var(--btn-reset);
+        border-color: var(--btn-reset);
+        color: #fff;
+      }
+
       body{
         background: var(--bg);
         color: var(--text);
         font-family: "Inter", sans-serif;
         min-height: 100vh;
+        transition: background .25s ease, color .25s ease;
       }
 
       h1, h5, .navbar-brand{
@@ -56,7 +104,7 @@
         top: 0;
         z-index: 20;
         box-shadow: 0 2px 6px rgba(37, 99, 235, 0.12);
-        transition: box-shadow .2s ease;
+        transition: box-shadow .2s ease, background .25s ease;
       }
       .navbar.scrolled{
         box-shadow: 0 4px 16px rgba(30, 41, 59, 0.18);
@@ -122,7 +170,7 @@
         border-radius: var(--radius);
         box-shadow: var(--shadow);
         padding: 1.75rem;
-        transition: transform .18s ease, box-shadow .18s ease;
+        transition: transform .18s ease, box-shadow .18s ease, background .25s ease, border-color .25s ease;
         animation: fadeInUp .35s ease;
       }
       .form-card:hover{
@@ -161,9 +209,11 @@
       .form-control, .form-select{
         border-radius: 8px;
         border: 1px solid var(--border);
+        background: var(--card);
+        color: var(--text);
         padding: .55rem .8rem;
         font-size: .9rem;
-        transition: border-color .15s ease, box-shadow .15s ease;
+        transition: border-color .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
       }
       .form-control:focus, .form-select:focus{
         border-color: var(--primary);
@@ -222,6 +272,10 @@
         </a>
       </div>
 
+      <button type="button" class="btn btn-outline-secondary btn-sm me-2" id="themeToggle" title="Toggle dark mode">
+        <i class="bi bi-moon-stars"></i>
+      </button>
+
       <form class="d-flex mb-0" role="search">
         {% if request.user.is_authenticated %}
           <a href='/logout/' class="btn btn-outline-secondary btn-sm">Logout</a>
@@ -238,7 +292,6 @@
         <span class="page-title-icon"><i class="bi bi-plus-lg"></i></span>
         Add Transaction
       </div>
-
       <div class="form-card">
         <form method="post">
           {% csrf_token %}
@@ -304,6 +357,55 @@
       </div>
 
     </div>
+
+    <script>
+      // ---- Dark mode toggle (persisted in localStorage, shared with other pages) ----
+      const themeToggle = document.getElementById("themeToggle");
+      const themeIcon = themeToggle.querySelector("i");
+      function applyTheme(theme) {
+        if (theme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          themeIcon.className = "bi bi-sun";
+        } else {
+          document.documentElement.removeAttribute("data-theme");
+          themeIcon.className = "bi bi-moon-stars";
+        }
+      }
+      applyTheme(localStorage.getItem("expenseTrackerTheme") || "light");
+      themeToggle.addEventListener("click", function () {
+        const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+        const next = current === "dark" ? "light" : "dark";
+        applyTheme(next);
+        localStorage.setItem("expenseTrackerTheme", next);
+      });
+
+      // Sticky navbar shadow only after scrolling (matches mainpage behavior)
+      const navbar = document.getElementById("mainNavbar");
+      window.addEventListener("scroll", function () {
+        navbar.classList.toggle("scrolled", window.scrollY > 4);
+      });
+
+      // Update the category color dot to match the selected category's fixed color,
+      // consistent with the colors used in the mainpage's doughnut chart.
+      const categoryColors = {
+        Food: "var(--cat-food)",
+        Groceries: "var(--cat-groceries)",
+        Travel: "var(--cat-travel)",
+        Shopping: "var(--cat-shopping)",
+        Entertainment: "var(--cat-entertainment)",
+        Bills: "var(--cat-bills)",
+        Investment: "var(--cat-investment)",
+        Salary: "var(--cat-salary)",
+        Other: "var(--cat-other)"
+      };
+      const categorySelect = document.getElementById("category");
+      const categoryDot = document.getElementById("categoryDot");
+      function updateCategoryDot() {
+        categoryDot.style.background = categoryColors[categorySelect.value] || "var(--cat-other)";
+      }
+      categorySelect.addEventListener("change", updateCategoryDot);
+      updateCategoryDot();
+    </script>
 
   </body>
 </html>
