@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from .models import Transactions,Budget
 from django.db.models.functions import ExtractMonth
+from .emails import send_welcome_email
 @login_required(login_url="/login/")
 @login_required(login_url="/login/")
 def mainpage(request):
@@ -305,7 +306,7 @@ def register_user(request):
         )
         user.set_password(password)
         user.save()
-
+        send_welcome_email(email, first_name) 
         messages.info(request,"Account created successfully")
 
         return redirect('/register/')
