@@ -281,22 +281,26 @@ def update_transaction(request,id):
         return redirect("/transactions/")
     return render(request,"expenses/update_transaction.html",{"task": queryset})
 
-def register_user(request):
-    if request.method=="POST":
-        data=request.POST
-        first_name=data.get("first_name")
-        last_name=data.get("last_name")
-        username=data.get("username")
-        email=data.get("email")
-        password=data.get("password")
+import random
+from django.utils import timezone
+from datetime import timedelta
+from .emails import send_welcome_email, send_otp_email
 
-        user=User.objects.filter(username=username)
-        if user.exists():
-            messages.info(request,"Username already exists")
+
+def register_user(request):
+    if request.method == "POST":
+        data = request.POST
+        first_name = data.get("first_name")
+        last_name = data.get("last_name")
+        username = data.get("username")
+        email = data.get("email")
+        password = data.get("password")
+
+        if User.objects.filter(username=username).first():
+            messages.info(request, "Username already exists")
             return redirect('/register/')
 
-
-       # ✅ Correct way matching new manager
+        # Create user but inactive until OTP verified
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -304,13 +308,80 @@ def register_user(request):
             last_name=last_name,
             password=password
         )
-        user.set_password(password)
+        user.is_active = False
         user.save()
-        send_welcome_email(email, first_name) 
-        messages.info(request,"Account created successfully")
 
+        # Generate 6-digit OTP
+        otp_code = str(random.randint(100000, 999999))
+
+        # Store in session
+        request.session['pending_user_id'] = user.id
+        request.session['otp_code'] = otp_code
+        request.session['otp_created_at'] = timezone.now().isoformat()
+
+        send_otp_email(email, first_name, otp_code)
+
+        return redirect('/verify-otp/')
+
+    return render(request, "expenses/register.html")
+
+
+def verify_otp(request):
+    pending_user_id = request.session.get('pending_user_id')
+
+    if not pending_user_id:
+        messages.error(request, "No pending verification. Please register again.")
         return redirect('/register/')
-    return render(request,"expenses/register.html")
+
+    if request.method == "POST":
+        entered_otp = request.POST.get("otp")
+        stored_otp = request.session.get('otp_code')
+        created_at_str = request.session.get('otp_created_at')
+
+        created_at = timezone.datetime.fromisoformat(created_at_str)
+        if timezone.now() > created_at + timedelta(minutes=10):
+            messages.error(request, "OTP expired. Please register again.")
+            User.objects.filter(id=pending_user_id).delete()
+            request.session.flush()
+            return redirect('/register/')
+
+        if entered_otp == stored_otp:
+            user = User.objects.get(id=pending_user_id)
+            user.is_active = True
+            user.save()
+
+            send_welcome_email(user.email, user.first_name)
+
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend') #Since there are two backends i.e 
+            #MOdelBAckend and allauth backend ,#login() function gets confuse ,therefore we mentioned it explicilty
+
+            del request.session['pending_user_id']
+            del request.session['otp_code']
+            del request.session['otp_created_at']
+
+            messages.success(request, "Account verified successfully!")
+            return redirect('/')
+        else:
+            messages.error(request, "Invalid OTP. Try again.")
+            return redirect('/verify-otp/')
+
+    return render(request, "expenses/verify_otp.html")
+
+
+def resend_otp(request):
+    pending_user_id = request.session.get('pending_user_id')
+    if not pending_user_id:
+        return redirect('/register/')
+
+    user = User.objects.get(id=pending_user_id)
+    otp_code = str(random.randint(100000, 999999))
+
+    request.session['otp_code'] = otp_code
+    request.session['otp_created_at'] = timezone.now().isoformat()
+
+    send_otp_email(user.email, user.first_name, otp_code)
+    messages.info(request, "A new OTP has been sent to your email.")
+    return redirect('/verify-otp/')
 
 def login_user(request):
     if request.method=="POST":
@@ -326,6 +397,9 @@ def login_user(request):
 
         if user is None:
             messages.error(request,"Invalid Password")
+            return redirect('/login/')
+        elif not user.is_active:
+            messages.error(request, "Please verify your email first.")
             return redirect('/login/')
         else:
             login(request,user)
