@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django import views
 from django.contrib import admin
 from django.urls import include, path
 from expenses.views import *
@@ -34,6 +35,8 @@ urlpatterns = [
     path("update_transaction/<int:id>/",update_transaction,name="update_transaction"),
     path("budget_tracker/",budget_tracker,name="budget_tracker"),
     path("update_budget/<int:id>/",update_budget,name="update_budget"),
+    path('verify-otp/', verify_otp, name='verify_otp'),
+    path('resend-otp/', resend_otp, name='resend_otp'),
 ]
 
 if settings.DEBUG:
