@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-h4iva2u@r6trb#!u@mf*_!d(zohc-&=wo33%$0y&)3*%vyjc6#'
+SECRET_KEY = config("Secret_key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -140,5 +140,5 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER="apikey"
 EMAIL_HOST_PASSWORD=config("SENDGRID_API_KEY")
-DEFAULT_FROM_EMAIL="ajaylegend506@gmail.com"
+DEFAULT_FROM_EMAIL=config("Email")
 SOCIALACCOUNT_LOGIN_ON_GET = True # To skip the default confirmation page and redirect to google email login dashboard
